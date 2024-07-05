@@ -1,0 +1,26 @@
+.genre-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.genre-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 16px;
+}
+
+.genre-button.selected {
+    background-color: #0056b3;
+}
+
+.genre-button:hover {
+    background-color: #0056b3;
+}

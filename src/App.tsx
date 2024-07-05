@@ -1,26 +1,33 @@
-import React from 'react';
-import logo from './logo.svg';
+import React, { useState } from 'react';
+import GenreFilter from './components/GenreFilter';
+import MovieList from './components/MovieList';
+import SearchBar from './components/SearchBar';
 import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const App: React.FC = () => {
+    const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
+    const [searchQuery, setSearchQuery] = useState<string>('');
+
+    const handleGenreSelect = (genres: number[]) => {
+        setSelectedGenres(genres);
+        setSearchQuery(''); // Clear search query when selecting genres
+    };
+
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+        setSelectedGenres([]); // Clear selected genres when searching
+    };
+
+    return (
+        <div className="app">
+            <header>
+                <h1>Movie List App</h1>
+                <SearchBar onSearch={handleSearch} />
+                <GenreFilter onGenreSelect={handleGenreSelect} />
+            </header>
+            <MovieList selectedGenres={selectedGenres} searchQuery={searchQuery} />
+        </div>
+    );
+};
 
 export default App;
