@@ -4,13 +4,21 @@ import '../styles/MovieCard.css';
 
 interface MovieCardProps {
     movie: Movie;
+    genres: { id: number; name: string }[];
 }
 
-const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
+const MovieCard: React.FC<MovieCardProps> = ({ movie, genres }) => {
     const [showFullDescription, setShowFullDescription] = useState(false);
 
     const toggleDescription = () => {
         setShowFullDescription(!showFullDescription);
+    };
+
+    const getGenreNames = (genreIds: number[]) => {
+        return genreIds
+            .map((id) => genres.find((genre) => genre.id === id)?.name)
+            .filter((name) => name)
+            .join(', ');
     };
 
     return (
@@ -25,9 +33,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
                     </span>
                 </div>
                 <div className="movie-card-info">
-                    <div><strong>Genre:</strong> {movie.genre_ids.join(', ')}</div>
-                    <div><strong>Cast:</strong> {/* Add cast information here */}</div>
-                    <div><strong>Director:</strong> {/* Add director information here */}</div>
+                    <div><strong>Genres:</strong> {getGenreNames(movie.genre_ids)}</div>
                 </div>
             </div>
         </div>
