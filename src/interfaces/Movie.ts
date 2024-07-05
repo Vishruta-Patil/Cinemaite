@@ -8,6 +8,8 @@ export interface Movie {
     title: string;
     overview: string;
     poster_path: string;
-    genre_ids: number[];
+    genres: { id: number, name: string }[];
+    cast?: string[];
+    director?: string;
 }
 

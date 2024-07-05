@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import MovieCard from './MovieCard';
 import { Movie } from '../interfaces/Movie';
-import { fetchMovies, searchMovies, fetchGenres } from '../services/api';
+import { fetchMovies, searchMovies, fetchMovieDetails } from '../services/api';
 import '../styles/MovieList.css';
 
 interface MovieListProps {
@@ -14,15 +14,6 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery }) =>
     const [movies, setMovies] = useState<Movie[]>([]);
     const [page, setPage] = useState<number>(1);
     const [hasMore, setHasMore] = useState<boolean>(true);
-    const [genres, setGenres] = useState<{ id: number, name: string }[]>([]);
-
-    useEffect(() => {
-        const fetchGenresData = async () => {
-            const genres = await fetchGenres();
-            setGenres(genres);
-        };
-        fetchGenresData();
-    }, []);
 
     useEffect(() => {
         setMovies([]);
@@ -38,8 +29,12 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery }) =>
     const fetchMoviesByYearAndGenre = async (year: number, genres: number[], reset: boolean = false) => {
         try {
             const newMovies = await fetchMovies(year, genres);
-            setMovies((prevMovies) => reset ? newMovies : [...prevMovies, ...newMovies]);
-            setHasMore(newMovies.length > 0);
+            const moviesWithDetails = await Promise.all(newMovies.map(async (movie: Movie) => {
+                const details = await fetchMovieDetails(movie.id);
+                return { ...movie, ...details };
+            }));
+            setMovies((prevMovies) => reset ? moviesWithDetails : [...prevMovies, ...moviesWithDetails]);
+            setHasMore(moviesWithDetails.length > 0);
         } catch (error) {
             console.error('Error fetching movies by year and genre:', error);
             setHasMore(false);
@@ -49,8 +44,12 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery }) =>
     const fetchMoviesBySearchQuery = async (query: string, page: number, reset: boolean = false) => {
         try {
             const newMovies = await searchMovies(query, page);
-            setMovies((prevMovies) => reset ? newMovies : [...prevMovies, ...newMovies]);
-            setHasMore(newMovies.length > 0);
+            const moviesWithDetails = await Promise.all(newMovies.map(async (movie: Movie) => {
+                const details = await fetchMovieDetails(movie.id);
+                return { ...movie, ...details };
+            }));
+            setMovies((prevMovies) => reset ? moviesWithDetails : [...prevMovies, ...moviesWithDetails]);
+            setHasMore(moviesWithDetails.length > 0);
         } catch (error) {
             console.error('Error fetching movies by search query:', error);
             setHasMore(false);
@@ -77,7 +76,7 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery }) =>
         >
             <div className="movie-list">
                 {movies.map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} genres={genres} />
+                    <MovieCard key={movie.id} movie={movie} />
                 ))}
             </div>
         </InfiniteScroll>
