@@ -6,13 +6,13 @@ interface SearchBarProps {
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
-    const [query, setQuery] = useState('');
+    const [query, setQuery] = useState<string>('');
 
-    const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setQuery(event.target.value);
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setQuery(e.target.value);
     };
 
-    const handleSearch = () => {
+    const handleSearchClick = () => {
         onSearch(query);
     };
 
@@ -20,11 +20,11 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
         <div className="search-bar">
             <input
                 type="text"
-                placeholder="Search for movies..."
                 value={query}
                 onChange={handleInputChange}
+                placeholder="Search for a movie..."
             />
-            <button onClick={handleSearch}>Search</button>
+            <button onClick={handleSearchClick}>Search</button>
         </div>
     );
 };
