@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import InfiniteScroll from 'react-infinite-scroll-component';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MovieCard from './MovieCard';
 import { Movie } from '../interfaces/Movie';
-import { fetchMovies, searchMovies, fetchMovieDetails } from '../services/api';
+import { fetchMovies, searchMovies } from '../services/api';
 import '../styles/MovieList.css';
 
 interface MovieListProps {
@@ -11,75 +10,82 @@ interface MovieListProps {
 }
 
 const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery }) => {
-    const [movies, setMovies] = useState<Movie[]>([]);
-    const [page, setPage] = useState<number>(1);
-    const [hasMore, setHasMore] = useState<boolean>(true);
+    const [moviesByYear, setMoviesByYear] = useState<{ [year: number]: Movie[] }>({});
+    const [years, setYears] = useState<number[]>([2012]);
+    const [loading, setLoading] = useState<boolean>(false);
 
     useEffect(() => {
-        setMovies([]);
-        setPage(1);
-        setHasMore(true);
-        if (searchQuery) {
-            fetchMoviesBySearchQuery(searchQuery, 1, true);
-        } else {
-            fetchMoviesByYearAndGenre(2012, selectedGenres, true);
-        }
+        fetchMoviesForYear(2012, true);
     }, [selectedGenres, searchQuery]);
 
-    const fetchMoviesByYearAndGenre = async (year: number, genres: number[], reset: boolean = false) => {
+    const fetchMoviesForYear = async (year: number, reset: boolean = false) => {
+        setLoading(true);
         try {
-            const newMovies = await fetchMovies(year, genres);
-            const moviesWithDetails = await Promise.all(newMovies.map(async (movie: Movie) => {
-                const details = await fetchMovieDetails(movie.id);
-                return { ...movie, ...details };
-            }));
-            setMovies((prevMovies) => reset ? moviesWithDetails : [...prevMovies, ...moviesWithDetails]);
-            setHasMore(moviesWithDetails.length > 0);
+            let newMovies: Movie[] = [];
+
+            if (searchQuery) {
+                newMovies = await searchMovies(searchQuery, 1); // Provide page number or additional argument
+            } else {
+                newMovies = await fetchMovies(year, selectedGenres, 20); // Fetch 20 movies
+            }
+
+            setMoviesByYear((prevMoviesByYear) => {
+                const updatedMovies = reset ? { [year]: newMovies } : { ...prevMoviesByYear, [year]: [...(prevMoviesByYear[year] || []), ...newMovies] };
+                return updatedMovies;
+            });
+
+            if (!years.includes(year)) {
+                setYears((prevYears) => [...prevYears, year].sort((a, b) => a - b));
+            }
         } catch (error) {
-            console.error('Error fetching movies by year and genre:', error);
-            setHasMore(false);
+            console.error('Error fetching movies:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const fetchMoviesBySearchQuery = async (query: string, page: number, reset: boolean = false) => {
-        try {
-            const newMovies = await searchMovies(query, page);
-            const moviesWithDetails = await Promise.all(newMovies.map(async (movie: Movie) => {
-                const details = await fetchMovieDetails(movie.id);
-                return { ...movie, ...details };
-            }));
-            setMovies((prevMovies) => reset ? moviesWithDetails : [...prevMovies, ...moviesWithDetails]);
-            setHasMore(moviesWithDetails.length > 0);
-        } catch (error) {
-            console.error('Error fetching movies by search query:', error);
-            setHasMore(false);
-        }
-    };
+    const observer = useRef<IntersectionObserver | null>(null);
+    const lastMovieElementRef = useCallback((node: any) => {
+        if (loading) return;
 
-    const fetchMoreMovies = () => {
-        const nextPage = page + 1;
-        setPage(nextPage);
-        if (searchQuery) {
-            fetchMoviesBySearchQuery(searchQuery, nextPage);
-        } else {
-            fetchMoviesByYearAndGenre(2012 + nextPage - 1, selectedGenres);
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting) {
+                const lastYear = Math.max(...years);
+                const nextYear = lastYear + 1;
+                fetchMoviesForYear(nextYear);
+            }
+        });
+
+        if (node) observer.current.observe(node);
+    }, [loading, years]);
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        if (loading) return;
+
+        if (e.currentTarget.scrollTop === 0) {
+            const firstYear = Math.min(...years);
+            const prevYear = firstYear - 1;
+            fetchMoviesForYear(prevYear);
+        } else if (e.currentTarget.scrollHeight - e.currentTarget.scrollTop === e.currentTarget.clientHeight) {
+            const lastYear = Math.max(...years);
+            const nextYear = lastYear + 1;
+            fetchMoviesForYear(nextYear);
         }
     };
 
     return (
-        <InfiniteScroll
-            dataLength={movies.length}
-            next={fetchMoreMovies}
-            hasMore={hasMore}
-            loader={<h4>Loading...</h4>}
-            endMessage={<p>No more movies to show</p>}
-        >
-            <div className="movie-list">
-                {movies.map((movie) => (
-                    <MovieCard key={movie.id} movie={movie} />
-                ))}
-            </div>
-        </InfiniteScroll>
+        <div className="movie-list" onScroll={handleScroll}>
+            {years.map(year => (
+                <React.Fragment key={year}>
+                    <h2 className="year-header">{year}</h2>
+                    {moviesByYear[year]?.map((movie, index) => (
+                        <MovieCard key={movie.id} movie={movie} ref={index === moviesByYear[year].length - 1 ? lastMovieElementRef : null} />
+                    ))}
+                </React.Fragment>
+            ))}
+            {loading && <h4>Loading...</h4>}
+        </div>
     );
 };
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef } from 'react';
 import { fetchMovieDetails } from '../services/api';
 import { Movie } from '../interfaces/Movie';
 import '../styles/MovieCard.css';
@@ -7,7 +7,7 @@ interface MovieCardProps {
     movie: Movie;
 }
 
-const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
+const MovieCard = forwardRef<HTMLDivElement, MovieCardProps>(({ movie }, ref) => {
     const [cast, setCast] = useState<string[]>([]);
     const [director, setDirector] = useState<string>('');
     const [showFullDescription, setShowFullDescription] = useState(false);
@@ -26,7 +26,7 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
     };
 
     return (
-        <div className="movie-card">
+        <div className="movie-card" ref={ref}>
             <img src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} />
             <div className="movie-card-content">
                 <div className="movie-card-title">{movie.title}</div>
@@ -37,13 +37,12 @@ const MovieCard: React.FC<MovieCardProps> = ({ movie }) => {
                     </span>
                 </div>
                 <div className="movie-card-info">
-                    <div><strong>Genres:</strong> {movie.genres?.map(genre => genre.name).join(', ')}</div>
                     <div><strong>Cast:</strong> {cast.join(', ')}</div>
                     <div><strong>Director:</strong> {director}</div>
                 </div>
             </div>
         </div>
     );
-};
+});
 
 export default MovieCard;

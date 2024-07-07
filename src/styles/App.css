@@ -25,6 +25,15 @@ header h1 {
     color: #ffffff;
 }
 
+.year-header {
+    width: 100%;
+    background-color: #1e1e1e;
+    color: #ffffff;
+    padding: 10px;
+    text-align: center;
+    margin-top: 20px;
+}
+
 .movie-list {
     display: flex;
     flex-wrap: wrap;
