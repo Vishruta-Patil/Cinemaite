@@ -25,9 +25,9 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery, genr
             let newMovies: Movie[] = [];
 
             if (searchQuery) {
-                newMovies = await searchMovies(searchQuery, 1); // Provide page number or additional argument
+                newMovies = await searchMovies(searchQuery, 1); 
             } else {
-                newMovies = await fetchMovies(year, selectedGenres, 20); // Fetch 20 movies
+                newMovies = await fetchMovies(year, selectedGenres, 20); 
             }
 
             setMoviesByYear((prevMoviesByYear) => {
