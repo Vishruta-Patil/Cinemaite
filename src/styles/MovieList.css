@@ -6,7 +6,7 @@
 }
 
 .year-header {
-    grid-column: span 4; /* Adjust as needed */
+    grid-column: span 4; 
     background-color: #1e1e1e;
     color: #ffffff;
     padding: 10px;

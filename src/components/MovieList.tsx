@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import MovieCard from './MovieCard';
-import { Movie } from '../interfaces/Movie';
+import { Movie, Genre } from '../interfaces/Movie';
 import { fetchMovies, searchMovies } from '../services/api';
 import '../styles/MovieList.css';
 
 interface MovieListProps {
     selectedGenres: number[];
     searchQuery: string;
+    genres: Genre[];
 }
 
-const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery }) => {
+const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery, genres }) => {
     const [moviesByYear, setMoviesByYear] = useState<{ [year: number]: Movie[] }>({});
     const [years, setYears] = useState<number[]>([2012]);
     const [loading, setLoading] = useState<boolean>(false);
@@ -80,7 +81,12 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery }) =>
                 <React.Fragment key={year}>
                     <h2 className="year-header">{year}</h2>
                     {moviesByYear[year]?.map((movie, index) => (
-                        <MovieCard key={movie.id} movie={movie} ref={index === moviesByYear[year].length - 1 ? lastMovieElementRef : null} />
+                        <MovieCard 
+                            key={movie.id} 
+                            movie={movie} 
+                            genres={genres} 
+                            ref={index === moviesByYear[year].length - 1 ? lastMovieElementRef : null} 
+                        />
                     ))}
                 </React.Fragment>
             ))}
@@ -90,3 +96,4 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery }) =>
 };
 
 export default MovieList;
+
