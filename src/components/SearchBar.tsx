@@ -10,10 +10,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value);
-    };
-
-    const handleSearchClick = () => {
-        onSearch(query);
+        onSearch(e.target.value);
     };
 
     return (
@@ -24,7 +21,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
                 onChange={handleInputChange}
                 placeholder="Search for a movie..."
             />
-            <button onClick={handleSearchClick}>Search</button>
+            <button onClick={() => onSearch(query)}>Search</button>
         </div>
     );
 };

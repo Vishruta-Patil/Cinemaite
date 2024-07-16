@@ -12,36 +12,69 @@ interface MovieListProps {
 
 const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery, genres }) => {
     const [moviesByYear, setMoviesByYear] = useState<{ [year: number]: Movie[] }>({});
-    const [years, setYears] = useState<number[]>([2012]);
+    const [years, setYears] = useState<number[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
+    const [noMoviesForYear, setNoMoviesForYear] = useState<Set<number>>(new Set());
+    const [fetchingYears, setFetchingYears] = useState<Set<number>>(new Set());
 
     useEffect(() => {
+        resetMovies();
         fetchMoviesForYear(2012, true);
     }, [selectedGenres, searchQuery]);
 
+    const resetMovies = () => {
+        setMoviesByYear({});
+        setYears([]);
+        setNoMoviesForYear(new Set());
+        setFetchingYears(new Set());
+    };
+
     const fetchMoviesForYear = async (year: number, reset: boolean = false) => {
+        if (fetchingYears.has(year)) return; 
+
         setLoading(true);
+        setFetchingYears(prev => new Set(prev).add(year));
+
         try {
             let newMovies: Movie[] = [];
 
             if (searchQuery) {
-                newMovies = await searchMovies(searchQuery, 1); 
+                newMovies = await searchMovies(searchQuery, 1);
             } else {
-                newMovies = await fetchMovies(year, selectedGenres, 20); 
+                newMovies = await fetchMovies(year, selectedGenres, 20);
             }
 
-            setMoviesByYear((prevMoviesByYear) => {
-                const updatedMovies = reset ? { [year]: newMovies } : { ...prevMoviesByYear, [year]: [...(prevMoviesByYear[year] || []), ...newMovies] };
-                return updatedMovies;
-            });
+            if (newMovies.length === 0) {
+                setNoMoviesForYear(prev => new Set(prev).add(year));
+            } else {
+                setMoviesByYear(prevMoviesByYear => ({
+                    ...prevMoviesByYear,
+                    [year]: [...(prevMoviesByYear[year] || []), ...newMovies]
+                }));
+                setNoMoviesForYear(prev => {
+                    const updated = new Set(prev);
+                    updated.delete(year);
+                    return updated;
+                });
+            }
 
-            if (!years.includes(year)) {
-                setYears((prevYears) => [...prevYears, year].sort((a, b) => a - b));
+            if (reset) {
+                setYears([year]);
+            } else {
+                setYears(prevYears => {
+                    const updatedYears = new Set([...prevYears, year]);
+                    return Array.from(updatedYears).sort((a, b) => a - b);
+                });
             }
         } catch (error) {
             console.error('Error fetching movies:', error);
         } finally {
             setLoading(false);
+            setFetchingYears(prev => {
+                const updated = new Set(prev);
+                updated.delete(year);
+                return updated;
+            });
         }
     };
 
@@ -50,7 +83,7 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery, genr
         if (loading) return;
 
         if (observer.current) observer.current.disconnect();
-        observer.current = new IntersectionObserver(entries => {
+        observer.current = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting) {
                 const lastYear = Math.max(...years);
                 const nextYear = lastYear + 1;
@@ -64,11 +97,13 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery, genr
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
         if (loading) return;
 
-        if (e.currentTarget.scrollTop === 0) {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+
+        if (scrollTop === 0) {
             const firstYear = Math.min(...years);
             const prevYear = firstYear - 1;
             fetchMoviesForYear(prevYear);
-        } else if (e.currentTarget.scrollHeight - e.currentTarget.scrollTop === e.currentTarget.clientHeight) {
+        } else if (scrollHeight - scrollTop === clientHeight) {
             const lastYear = Math.max(...years);
             const nextYear = lastYear + 1;
             fetchMoviesForYear(nextYear);
@@ -77,17 +112,22 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery, genr
 
     return (
         <div className="movie-list" onScroll={handleScroll}>
-            {years.map(year => (
+            {years.length === 0 && noMoviesForYear.has(2012) && <h4>No movies found</h4>}
+            {years.map((year) => (
                 <React.Fragment key={year}>
                     <h2 className="year-header">{year}</h2>
-                    {moviesByYear[year]?.map((movie, index) => (
-                        <MovieCard 
-                            key={movie.id} 
-                            movie={movie} 
-                            genres={genres} 
-                            ref={index === moviesByYear[year].length - 1 ? lastMovieElementRef : null} 
-                        />
-                    ))}
+                    {noMoviesForYear.has(year) ? (
+                        <h4>No movies found for {year}</h4>
+                    ) : (
+                        moviesByYear[year]?.map((movie, index) => (
+                            <MovieCard
+                                key={movie.id}
+                                movie={movie}
+                                genres={genres}
+                                ref={index === moviesByYear[year].length - 1 ? lastMovieElementRef : null}
+                            />
+                        ))
+                    )}
                 </React.Fragment>
             ))}
             {loading && <h4>Loading...</h4>}
@@ -96,4 +136,3 @@ const MovieList: React.FC<MovieListProps> = ({ selectedGenres, searchQuery, genr
 };
 
 export default MovieList;
-

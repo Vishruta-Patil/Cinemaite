@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import SearchBar from './components/SearchBar';
 import GenreFilter from './components/GenreFilter';
 import MovieList from './components/MovieList';
@@ -27,18 +27,27 @@ const App: React.FC = () => {
         fetchAllMovies();
     }, []);
 
+    const debounce = (func: Function, delay: number) => {
+        let timeoutId: NodeJS.Timeout;
+        return (...args: any[]) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func(...args), delay);
+        };
+    };
+
     const handleGenreSelect = (genreIds: number[]) => {
         setSelectedGenres(genreIds);
     };
-    const handleSearch = (query: string) => {
+
+    const debounceSearch = useCallback(debounce((query: string) => {
         setSearchQuery(query);
-    };
+    }, 300), []);
 
     return (
         <div className="app">
             <header>
                 <h1>CINEMAITE</h1>
-                <SearchBar onSearch={handleSearch} />
+                <SearchBar onSearch={debounceSearch} />
                 <GenreFilter onGenreSelect={handleGenreSelect} />
             </header>
             <MovieList
